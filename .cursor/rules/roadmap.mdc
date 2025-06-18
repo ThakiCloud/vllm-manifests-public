@@ -1,0 +1,66 @@
+---
+description: "TODO: add description"
+globs: 
+alwaysApply: false
+---
+# Roadmap
+
+## 개요
+이 로드맵은 `vllm-manifests` 통합 리포지토리의 발전 방향을 제시합니다. 목표는 더 많은 컴포넌트를 통합하고, 배포 자동화 수준을 높이며, 관리되는 스택의 보안과 안정성을 강화하는 것입니다.
+
+---
+
+### Phase 1: 기반 강화 및 문서화 (현재 ~ 2024년 3분기)
+**목표**: 리포지토리의 사용성을 개선하고, 신규 사용자가 쉽게 전체 스택을 이해하고 배포할 수 있도록 기반을 다집니다.
+
+- **컴포넌트별 배포 문서화**:
+    - `docs/` 디렉토리에 각 컴포넌트(`ingress`, `monitoring`, `vllm-eval`, `vllm-nextchat`)의 역할과 배포 방법을 상세히 기술.
+- **통합 테스트 파이프라인(CI) 구축**:
+    - GitHub Actions를 사용하여 PR 생성 시 `helm lint`, `kubeval` 등을 통해 모든 매니페스트의 유효성을 검사하는 워크플로우 구축.
+- **`README.md` 개편**:
+    - 통합 리포지토리의 목적, 전체 아키텍처, 컴포넌트별 문서 링크를 포함하여 전면 재작성.
+- **Kustomize 도입 검토**:
+    - `monitoring`, `vllm-eval` 등 일반 매니페스트 관리를 위해 Kustomize를 도입하여 환경별(dev/prod) 오버레이 관리 방안 마련.
+
+**산출물**:
+- 컴포넌트별 상세 배포 가이드 (`docs/*.md`).
+- 매니페스트 유효성 검사 CI 파이프라인.
+- 새로운 `README.md`.
+
+---
+
+### Phase 2: 운영 자동화 및 기능 확장 (2024년 4분기)
+**목표**: 수동 개입을 최소화하고, 로깅 및 알림 기능을 추가하여 운영 효율성을 높입니다.
+
+- **Umbrella Helm Chart 개발**:
+    - 모든 컴포넌트를 하나의 상위(Umbrella) Helm 차트로 묶어, 단일 명령어로 전체 스택을 배포할 수 있는 옵션 제공.
+- **로깅 스택 통합**:
+    - Fluent Bit, Loki, Grafana로 구성된 경량 로깅 스택을 `logging/` 디렉토리에 추가하고 배포 매니페스트 작성.
+- **통합 알림 채널 구축**:
+    - Prometheus Alertmanager의 설정을 표준화하여, 주요 장애 알림(vLLM, Grafana, 평가 Job)이 단일 채널(e.g., Slack, Teams)로 통합되도록 구성.
+- **의존성 버전 관리 정책 수립**:
+    - vLLM, NextChat 등 주요 컴포넌트의 버전을 명시적으로 관리하고, 정기적으로 업데이트 및 호환성 테스트를 수행하는 프로세스 정의.
+
+**산출물**:
+- 전체 스택 배포용 Umbrella Helm 차트.
+- `logging/` 디렉토리 및 배포 문서.
+- 표준화된 `alertmanager.yaml` 설정.
+
+---
+
+### Phase 3: 보안 강화 및 고급 관리 기능 도입 (2025년 상반기)
+**목표**: 프로덕션 환경에 적합한 높은 수준의 보안을 적용하고, 비용 및 권한 관리를 체계화합니다.
+
+- **보안 정책(Policy as Code) 도입**:
+    - Kyverno 또는 OPA Gatekeeper를 사용하여 `PodSecurityStandards`, `NetworkPolicy` 등 보안 정책을 코드로 정의하고 클러스터에 강제.
+- **Secret 관리 고도화**:
+    - HashiCorp Vault 또는 External Secrets Operator(ESO)를 도입하여 Secret 관리 방식을 개선.
+- **비용 관리 스택 추가**:
+    - OpenCost를 `monitoring/` 스택에 추가하여 쿠버네티스 리소스 비용 가시성 확보.
+- **GitOps 고도화**:
+    - ArgoCD Image Updater를 도입하여 컨테이너 이미지 버전 변경 시 GitOps 방식으로 자동 업데이트하는 방안 검토.
+
+**산출물**:
+- Kyverno/OPA 정책 매니페스트.
+- Vault/ESO 연동 가이드 및 예제 매니페스트.
+- 비용 모니터링이 추가된 Grafana 대시보드.

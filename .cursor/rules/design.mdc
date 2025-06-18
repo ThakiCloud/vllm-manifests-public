@@ -1,0 +1,79 @@
+---
+description: 
+globs: 
+alwaysApply: true
+---
+# Design
+
+## 통합 시스템 설계 원칙
+
+### 1. Component-based Architecture (컴포넌트 기반 아키텍처)
+- **독립성 및 대체 가능성**: 각 컴포넌트(`vllm-nextchat`, `vllm-eval`, `monitoring`)는 독립적인 디렉토리로 관리되며, 유사한 기능을 가진 다른 도구로 교체할 수 있도록 설계합니다.
+- **명확한 인터페이스**: 컴포넌트 간의 연동은 Kubernetes 서비스(Service)와 같이 잘 정의된 인터페이스를 통해 이루어집니다.
+
+### 2. Centralized Configuration (중앙화된 설정 관리)
+- **Helm Values & Kustomize**: `vllm-nextchat`과 같이 복잡한 애플리케이션은 Helm `custom-values.yaml`을 통해, 다른 컴포넌트들은 Kustomize를 통해 설정을 유연하게 변경할 수 있는 구조를 지향합니다.
+- **GitOps**: 모든 설정 변경은 Git 커밋을 통해 이루어져야 하며, 이는 ArgoCD와 같은 도구를 통해 클러스터에 자동으로 반영됩니다.
+
+## 통합 아키텍처 및 데이터 흐름
+
+```mermaid
+graph TD
+    subgraph "External"
+        User[User/Developer]
+    end
+
+    subgraph "Kubernetes Cluster"
+        Ingress[Ingress Controller]
+        
+        subgraph "vllm-nextchat Namespace"
+            subgraph "vllm-nextchat Helm Chart"
+                NextChat[Pod: NextChat UI]
+                VLLM[Pod: vLLM Server]
+                VLLM_SVC[Service: vllm-svc]
+                NextChat_SVC[Service: nextchat-svc]
+            end
+        end
+
+        subgraph "monitoring Namespace"
+            Prometheus[Prometheus]
+            Grafana[Grafana]
+            DCGM[DCGM Exporter]
+        end
+
+        subgraph "vllm-eval Namespace"
+             EvalJob[Job: vllm-benchmark/evalchemy]
+             EvalArgo[ArgoCD App]
+        end
+    end
+    
+    User -- HTTPS --> Ingress
+    Ingress -- / --> NextChat_SVC --> NextChat
+    Ingress -- /grafana --> Grafana
+    NextChat -- OpenAI API --> VLLM_SVC --> VLLM
+
+    Prometheus -- Scrapes --> DCGM
+    Prometheus -- Scrapes --> VLLM
+    Grafana -- Queries --> Prometheus
+
+    EvalArgo -- Syncs --> EvalJob
+    EvalJob -- Benchmarks --> VLLM_SVC
+```
+
+1.  **사용자 접근**: 사용자는 **Ingress**를 통해 **NextChat UI** 또는 **Grafana 대시보드**에 접근합니다.
+2.  **챗봇 서비스**: NextChat UI는 내부 Kubernetes DNS(`vllm-svc`)를 통해 **vLLM 서버**와 통신하여 LLM 추론을 수행합니다.
+3.  **모니터링**: **Prometheus**는 vLLM 서버와 **DCGM Exporter**의 메트릭을 주기적으로 수집(scrape)합니다. **Grafana**는 이 데이터를 시각화합니다.
+4.  **성능 평가**: **ArgoCD**는 Git 리포지토리의 `vllm-eval` 경로를 동기화하여, 필요시 **평가 Job**을 실행합니다. 이 Job은 vLLM 서비스의 성능을 측정합니다.
+
+## 디렉토리별 역할
+
+- **`vllm-nextchat/`**: 핵심 LLM 서비스(vLLM, NextChat)를 배포하는 **Helm 차트**와 설정 파일(`custom-values.yaml`)을 포함합니다.
+- **`vllm-eval/`**: 모델 성능 평가를 위한 Kubernetes **Job**들과 이를 관리하는 **ArgoCD Application** 매니페스트를 포함합니다.
+- **`monitoring/`**: **Prometheus**, **Grafana** 등 시스템 전반의 상태를 관찰하기 위한 모니터링 스택의 매니페스트를 포함합니다.
+- **`ingress/`**: 외부 트래픽을 클러스터 내부 서비스로 라우팅하는 **Ingress** 규칙을 정의합니다.
+- **`docs/`**: 각 컴포넌트의 상세 배포 방법을 기술한 **문서**를 포함합니다.
+
+## 설정 관리 전략
+
+- **네임스페이스 분리**: 각 핵심 컴포넌트(예: `vllm-nextchat`, `monitoring`, `vllm-eval`)는 별도의 네임스페이스에 배포하여 리소스와 권한을 격리하는 것을 권장합니다.
+- **민감 정보 관리**: Grafana 비밀번호, Hugging Face 토큰 등은 base64 인코딩이나 Sealed Secrets/External Secrets와 같은 패턴을 사용하여 안전하게 관리해야 합니다.

@@ -1,0 +1,59 @@
+vllm:
+  model: "Qwen/Qwen3-8B"
+  maxModelLen: 4096
+  gpuMemoryUtilization: 0.9
+  trust_remote_code: true
+  served_model_name: "qwen3-8b"
+  
+  nodeSelector:
+    accelerator: nvidia-l40
+  
+  resources:
+    limits:
+      nvidia.com/gpu: 1
+      memory: "48Gi"
+      cpu: "8"
+    requests:
+      memory: "24Gi"
+      cpu: "4"
+
+nextchat:
+  baseUrl: "http://vllm.vllm-nextchat.svc.cluster.local:8000"
+  openaiApiKey: "sk-proxy"
+  defaultModel: "qwen3-8b"
+  customModels: "qwen3-8b"
+  hideUserApiKey: true
+  env:
+    - name: DEFAULT_MODEL
+      value: "qwen3-8b"
+    - name: CUSTOM_MODELS
+      value: "qwen3-8b"
+
+hfToken:
+  enabled: true
+
+# Persistence 설정 - storage class 지정
+persistence:
+  enabled: true
+  storageClass: "csi-rbd-sc"
+  size: 50Gi
+  accessMode: ReadWriteOnce
+
+# Model cache 설정 - storage class 지정
+modelCache:
+  enabled: true
+  storageClass: "csi-rbd-sc"
+  size: 20Gi
+  
+ingress:
+  enabled: false  # 초기 테스트에서는 비활성화
+
+monitoring:
+  enabled: true
+  dcgmExporter:
+    enabled: true
+
+hpa:
+  enabled: true
+  minReplicas: 1
+  maxReplicas: 3

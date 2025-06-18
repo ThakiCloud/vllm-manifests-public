@@ -1,0 +1,65 @@
+---
+description: 
+globs: 
+alwaysApply: true
+---
+# Requirements
+
+## 기능 요구사항 (Functional Requirements)
+
+### F-01: LLM 채팅 기능
+- **설명**: 사용자는 NextChat UI를 통해 vLLM 서버와 실시간으로 텍스트 기반 대화를 주고받을 수 있어야 한다.
+- **요소**:
+    - 메시지 입력 및 전송 인터페이스
+    - LLM으로부터 스트리밍 형태로 답변 수신
+    - 대화 내용 표시 영역
+
+### F-02: 대화 관리
+- **설명**: 사용자는 여러 개의 대화 세션을 생성하고 관리할 수 있어야 한다.
+- **기능**:
+    - 새 대화 시작
+    - 이전 대화 목록 조회
+    - 대화 삭제 또는 이름 변경
+
+### F-03: 모델 설정 (NextChat UI 지원 시)
+- **설명**: 사용자는 UI 내에서 대화에 사용할 모델이나 파라미터를 변경할 수 있어야 한다.
+- **요소**:
+    - 사용 가능한 모델 목록 드롭다운 (`customModels` 설정과 연동)
+    - Temperature, Max Tokens 등 기본 파라미터 조절
+
+### F-04: 반응형 UI
+- **설명**: 애플리케이션은 다양한 화면 크기(데스크탑, 태블릿, 모바일)에서 최적화된 레이아웃을 제공해야 한다.
+
+## 비기능 요구사항 (Non-Functional Requirements)
+
+### 성능 (Performance)
+- **응답 속도**: vLLM 서버의 TTFT(Time To First Token)는 500ms 이하여야 한다.
+- **UI 로딩**: NextChat 페이지의 LCP(Largest Contentful Paint)는 3초 이내여야 한다.
+- **스트리밍 렌더링**: LLM의 답변이 생성될 때 끊김 없이(60fps) 부드럽게 렌더링되어야 한다.
+
+### 보안 (Security)
+- **컨테이너 보안**:
+    - 모든 컨테이너는 `non-root` 사용자로 실행되어야 한다.
+    - 프로덕션 이미지는 `Trivy` 스캔을 통과해야 하며, `CRITICAL` 또는 `HIGH` 등급의 취약점이 없어야 한다.
+- **민감 정보**: Hugging Face 토큰(`hfToken`) 등 민감 정보는 코드에 하드코딩되지 않고 Kubernetes Secret을 통해 주입되어야 한다.
+- **네트워크 정책**: vLLM 서비스는 기본적으로 클러스터 외부로 노출되지 않아야 하며, Ingress를 통해서만 통신해야 한다.
+
+### 가용성 (Availability)
+- **무중단 배포**: Kubernetes의 `RollingUpdate` 전략을 사용하여 vLLM, NextChat 업데이트 중 서비스 중단이 없어야 한다.
+- **Health Check**: `livenessProbe`와 `readinessProbe`를 설정하여 비정상적인 Pod를 자동으로 재시작하고 트래픽을 받지 않도록 제어해야 한다.
+- **목표 가용성**: 99.9% Uptime
+
+### 확장성 (Scalability)
+- **수평 확장**: vLLM 서버는 상태를 갖지 않는(stateless) 구조여야 하며, Kubernetes HPA(Horizontal Pod Autoscaler)를 통해 트래픽에 따라 수평 확장이 가능해야 한다.
+- **자원 관리**: 모델 및 `custom-values.yaml`을 통해 GPU, CPU, 메모리 등의 리소스 요구사항과 제한을 명확히 설정해야 한다.
+
+### 운영 요구사항 (Operational Requirements)
+
+### CI/CD
+- **자동화**: `main` 브랜치에 코드(매니페스트, Helm 차트)가 병합되면 자동으로 유효성 검사(e.g., `kubeval`, `helm lint`)가 수행되어야 한다.
+- **품질 게이트**: PR 생성 시 Lint, Chart 테스트가 통과해야만 병합 가능해야 한다.
+
+### 모니터링 및 로깅
+- **GPU 모니터링**: DCGM Exporter를 통해 GPU 사용률, 메모리, 온도 등의 핵심 지표를 Prometheus로 수집해야 한다.
+- **애플리케이션 로그**: vLLM, NextChat 컨테이너의 로그는 표준 출력(stdout/stderr)으로 전송되어 중앙 로깅 시스템에서 수집할 수 있어야 한다.
+- **Health Endpoint**: Kubernetes Probe가 상태를 확인할 수 있는 `/healthz`와 같은 상태 확인 엔드포인트를 제공해야 한다.

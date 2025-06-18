@@ -1,0 +1,37 @@
+---
+description: 
+globs: 
+alwaysApply: true
+---
+# Context
+
+## 프로젝트 개요
+본 리포지토리는 **vLLM 기반의 LLM 추론 서비스 스택**을 구성하는 여러 컴포넌트들의 Kubernetes 매니페스트를 통합 관리하기 위한 **중앙 저장소(Integration Repository)**입니다. vLLM 추론 서버, NextChat 웹 UI, 모델 성능 평가, 모니터링 시스템 등 각기 다른 프로젝트의 결과물을 하나로 모아, 일관성 있고 안정적으로 배포 및 운영하는 것을 목표로 합니다.
+
+## 핵심 기술 스택
+- **Orchestration**: **Kubernetes**, **Helm**, Kustomize
+- **Core Services**:
+    - **LLM Serving**: **vLLM**
+    - **Web UI**: **NextChat**
+- **Supporting Systems**:
+    - **Evaluation**: Argo CD, Kubernetes Jobs (`vllm-eval`)
+    - **Monitoring**: **Prometheus**, Grafana, DCGM Exporter
+    - **Ingress**: Ingress-NGINX
+- **GitOps**: **ArgoCD** (권장), GitHub Actions
+
+## 리포지토리의 목적과 가치
+- **통합 및 표준화**: 분산된 컴포넌트들의 매니페스트를 한 곳에서 관리하여 배포 구성을 표준화합니다.
+- **배포 용이성**: 검증된 매니페스트 세트를 제공하여 전체 LLM 서비스 스택을 신속하게 클러스터에 배포할 수 있도록 지원합니다.
+- **버전 관리 및 추적성**: 모든 인프라 구성이 Git을 통해 관리되므로, 변경 이력을 추적하고 특정 버전으로 롤백하기 용이합니다.
+- **컴포넌트 간 호환성 보장**: 각 컴포넌트(vLLM, NextChat, Monitoring 등)가 서로 원활하게 연동되도록 테스트된 조합을 제공합니다.
+
+## 주요 이해관계자
+- **플랫폼 엔지니어 / DevOps 팀**: 이 리포지토리를 사용하여 사내에 표준 LLM 플랫폼을 구축하고 운영합니다.
+- **ML Ops 팀**: 모델 평가 시스템을 배포하고, 새로운 모델의 성능을 측정하는 데 이 리포지토리를 활용합니다.
+- **애플리케이션 개발팀**: 플랫폼 팀이 구축한 LLM 서비스를 이용하는 최종 사용자 그룹. 이 리포지토리를 직접 다루기보다는, 구축된 서비스를 사용합니다.
+
+## 성공의 정의 (Definition of Success)
+- **배포 시간 단축**: 새로운 Kubernetes 클러스터에 전체 스택을 배포하는 데 걸리는 시간이 4시간 이내로 완료됩니다.
+- **안정성**: 이 리포지토리의 `main` 브랜치에 있는 매니페스트는 항상 안정적으로 배포 가능해야 합니다 (Deployment-ready).
+- **문서화**: 모든 컴포넌트의 배포 방법과 주요 설정이 `docs/` 디렉토리에 명확하게 문서화되어 있습니다.
+- **확장성**: 새로운 컴포넌트(e.g., 로깅 스택)를 리포지토리에 통합하는 표준 절차와 가이드가 정의되어 있습니다.

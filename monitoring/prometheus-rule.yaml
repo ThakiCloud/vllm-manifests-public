@@ -1,0 +1,117 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: vllm-gpu-alerts
+  namespace: vllm-nextchat
+  labels:
+    app.kubernetes.io/name: vllm
+    app.kubernetes.io/component: monitoring
+    prometheus: kube-prometheus
+    role: alert-rules
+data:
+  vllm-gpu-alerts.yml: |
+    groups:
+    - name: vllm.gpu.rules
+      interval: 30s
+      rules:
+      # GPU Memory Usage Alert (PRD requirement: > 42GB > 5min)
+      - alert: VLLMGPUMemoryHigh
+        expr: DCGM_FI_DEV_FB_USED / (1024^3) > 42
+        for: 5m
+        labels:
+          severity: warning
+          service: vllm
+        annotations:
+          summary: "vLLM GPU memory usage is high"
+          description: "GPU memory usage is {{ $value }}GB on instance {{ $labels.instance }}, which is above the 42GB threshold for more than 5 minutes."
+      
+      # GPU Utilization Alert
+      - alert: VLLMGPUUtilizationHigh
+        expr: DCGM_FI_DEV_GPU_UTIL > 95
+        for: 2m
+        labels:
+          severity: warning
+          service: vllm
+        annotations:
+          summary: "vLLM GPU utilization is very high"
+          description: "GPU utilization is {{ $value }}% on instance {{ $labels.instance }}, which may indicate performance bottleneck."
+      
+      # GPU Temperature Alert
+      - alert: VLLMGPUTemperatureHigh
+        expr: DCGM_FI_DEV_GPU_TEMP > 85
+        for: 1m
+        labels:
+          severity: critical
+          service: vllm
+        annotations:
+          summary: "vLLM GPU temperature is too high"
+          description: "GPU temperature is {{ $value }}°C on instance {{ $labels.instance }}, which may cause thermal throttling."
+      
+      # GPU Power Usage Alert
+      - alert: VLLMGPUPowerHigh
+        expr: DCGM_FI_DEV_POWER_USAGE > 280
+        for: 3m
+        labels:
+          severity: warning
+          service: vllm
+        annotations:
+          summary: "vLLM GPU power usage is high"
+          description: "GPU power usage is {{ $value }}W on instance {{ $labels.instance }}, approaching the 300W TDP limit."
+      
+      # vLLM Service Down
+      - alert: VLLMServiceDown
+        expr: up{job="vllm"} == 0
+        for: 1m
+        labels:
+          severity: critical
+          service: vllm
+        annotations:
+          summary: "vLLM service is down"
+          description: "vLLM service has been down for more than 1 minute."
+      
+      # Response Time Alert (PRD requirement: P95 ≤ 800ms)
+      - alert: VLLMHighLatency
+        expr: histogram_quantile(0.95, rate(vllm_request_duration_seconds_bucket[5m])) > 0.8
+        for: 2m
+        labels:
+          severity: warning
+          service: vllm
+        annotations:
+          summary: "vLLM response time is high"
+          description: "95th percentile response time is {{ $value }}s, which exceeds the 800ms SLA."
+      
+      # Throughput Alert (PRD requirement: ≥ 15 req/s)
+      - alert: VLLMLowThroughput
+        expr: rate(vllm_request_total[5m]) < 15
+        for: 3m
+        labels:
+          severity: warning
+          service: vllm
+        annotations:
+          summary: "vLLM throughput is low"
+          description: "Request rate is {{ $value }} req/s, which is below the 15 req/s target."
+
+    - name: nextchat.rules
+      interval: 30s
+      rules:
+      # NextChat Service Down
+      - alert: NextChatServiceDown
+        expr: up{job="nextchat"} == 0
+        for: 1m
+        labels:
+          severity: critical
+          service: nextchat
+        annotations:
+          summary: "NextChat service is down"
+          description: "NextChat service has been down for more than 1 minute."
+      
+      # NextChat High Error Rate
+      - alert: NextChatHighErrorRate
+        expr: rate(nextchat_http_requests_total{status=~"5.."}[5m]) / rate(nextchat_http_requests_total[5m]) > 0.05
+        for: 2m
+        labels:
+          severity: warning
+          service: nextchat
+        annotations:
+          summary: "NextChat error rate is high"
+          description: "Error rate is {{ $value | humanizePercentage }} for NextChat service." 

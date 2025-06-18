@@ -1,0 +1,377 @@
+# Grafana Dashboard Provisioning Configuration
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: grafana-dashboard-config
+  namespace: vllm-nextchat
+  labels:
+    app: grafana
+    grafana_dashboard: "1"
+data:
+  dashboards.yaml: |
+    apiVersion: 1
+    providers:
+      - name: 'default'
+        orgId: 1
+        folder: ''
+        type: file
+        disableDeletion: false
+        editable: true
+        options:
+          path: /var/lib/grafana/dashboards
+
+---
+# Grafana Dashboard JSON
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: vllm-gpu-dashboard
+  namespace: vllm-nextchat
+  labels:
+    app: grafana
+    grafana_dashboard: "1"
+data:
+  vllm-monitoring.json: |
+    {
+      "id": null,
+      "uid": "vllm-simple-dashboard",
+      "title": "vLLM 시스템 모니터링 대시보드",
+      "tags": ["vllm", "gpu", "monitoring"],
+      "timezone": "browser",
+      "refresh": "5s",
+      "time": {
+        "from": "now-5m",
+        "to": "now"
+      },
+      "panels": [
+        {
+          "id": 1,
+          "title": "GPU 사용률 (%)",
+          "type": "stat",
+          "targets": [
+            {
+              "expr": "DCGM_FI_DEV_GPU_UTIL{job=\"dcgm-exporter\"}",
+              "legendFormat": "GPU {{gpu}}"
+            }
+          ],
+          "fieldConfig": {
+            "defaults": {
+              "unit": "percent",
+              "min": 0,
+              "max": 100,
+              "displayName": "GPU ${__field.labels.gpu}",
+              "thresholds": {
+                "steps": [
+                  {"color": "green", "value": null},
+                  {"color": "yellow", "value": 70},
+                  {"color": "red", "value": 90}
+                ]
+              }
+            }
+          },
+          "gridPos": {"h": 8, "w": 8, "x": 0, "y": 0}
+        },
+        {
+          "id": 2,
+          "title": "GPU 메모리 사용률 (%)",
+          "type": "stat",
+          "targets": [
+            {
+              "expr": "DCGM_FI_DEV_FB_USED{job=\"dcgm-exporter\"} / (DCGM_FI_DEV_FB_USED{job=\"dcgm-exporter\"} + DCGM_FI_DEV_FB_FREE{job=\"dcgm-exporter\"}) * 100",
+              "legendFormat": "GPU {{gpu}} Memory"
+            }
+          ],
+          "fieldConfig": {
+            "defaults": {
+              "unit": "percent",
+              "min": 0,
+              "max": 100,
+              "displayName": "GPU ${__field.labels.gpu} Memory",
+              "thresholds": {
+                "steps": [
+                  {"color": "green", "value": null},
+                  {"color": "yellow", "value": 70},
+                  {"color": "red", "value": 85}
+                ]
+              }
+            }
+          },
+          "gridPos": {"h": 8, "w": 8, "x": 8, "y": 0}
+        },
+        {
+          "id": 3,
+          "title": "GPU 온도 (°C)",
+          "type": "stat",
+          "targets": [
+            {
+              "expr": "DCGM_FI_DEV_GPU_TEMP{job=\"dcgm-exporter\"}",
+              "legendFormat": "GPU {{gpu}}"
+            }
+          ],
+          "fieldConfig": {
+            "defaults": {
+              "unit": "celsius",
+              "min": 0,
+              "max": 100,
+              "displayName": "GPU ${__field.labels.gpu}",
+              "thresholds": {
+                "steps": [
+                  {"color": "green", "value": null},
+                  {"color": "yellow", "value": 70},
+                  {"color": "red", "value": 80}
+                ]
+              }
+            }
+          },
+          "gridPos": {"h": 8, "w": 8, "x": 16, "y": 0}
+        },
+        {
+          "id": 4,
+          "title": "CPU 사용률 (%)",
+          "type": "stat",
+          "targets": [
+            {
+              "expr": "(1 - avg(rate(node_cpu_seconds_total{mode=\"idle\",instance!=\"node-exporter:9100\"}[5m])) by (instance)) * 100 * on(instance) group_left(node) (label_replace(kube_pod_info{pod=~\"node-exporter.*\"}, \"instance\", \"$1:9100\", \"pod_ip\", \"(.+)\"))",
+              "legendFormat": "{{node}}"
+            }
+          ],
+          "fieldConfig": {
+            "defaults": {
+              "unit": "percent",
+              "min": 0,
+              "max": 100,
+              "thresholds": {
+                "steps": [
+                  {"color": "green", "value": null},
+                  {"color": "yellow", "value": 70},
+                  {"color": "red", "value": 85}
+                ]
+              }
+            }
+          },
+          "gridPos": {"h": 8, "w": 8, "x": 0, "y": 8}
+        },
+                {
+          "id": 5,
+          "title": "메모리 사용률 (%)",
+          "type": "stat",
+          "targets": [
+            {
+              "expr": "(1 - (node_memory_MemAvailable_bytes{instance!=\"node-exporter:9100\"} / node_memory_MemTotal_bytes{instance!=\"node-exporter:9100\"})) * 100 * on(instance) group_left(node) (label_replace(kube_pod_info{pod=~\"node-exporter.*\"}, \"instance\", \"$1:9100\", \"pod_ip\", \"(.+)\"))",
+              "legendFormat": "{{node}}"
+            }
+          ],
+          "fieldConfig": {
+            "defaults": {
+              "unit": "percent",
+              "min": 0,
+              "max": 100,
+              "thresholds": {
+                "steps": [
+                  {"color": "green", "value": null},
+                  {"color": "yellow", "value": 70},
+                  {"color": "red", "value": 85}
+                ]
+              }
+            }
+          },
+          "gridPos": {"h": 8, "w": 8, "x": 8, "y": 8}
+        },
+        {
+          "id": 6,
+          "title": "디스크 사용률 (%)",
+          "type": "stat",
+          "targets": [
+            {
+              "expr": "(1 - (node_filesystem_avail_bytes{mountpoint=\"/\",instance!=\"node-exporter:9100\"} / node_filesystem_size_bytes{mountpoint=\"/\",instance!=\"node-exporter:9100\"})) * 100 * on(instance) group_left(node) (label_replace(kube_pod_info{pod=~\"node-exporter.*\"}, \"instance\", \"$1:9100\", \"pod_ip\", \"(.+)\"))",
+              "legendFormat": "{{node}}"
+            }
+          ],
+          "fieldConfig": {
+            "defaults": {
+              "unit": "percent",
+              "min": 0,
+              "max": 100,
+              "thresholds": {
+                "steps": [
+                  {"color": "green", "value": null},
+                  {"color": "yellow", "value": 70},
+                  {"color": "red", "value": 85}
+                ]
+              }
+            }
+          },
+          "gridPos": {"h": 8, "w": 8, "x": 16, "y": 8}
+        },
+        {
+          "id": 8,
+          "title": "디스크 I/O (IOPS)",
+          "type": "timeseries",
+          "targets": [
+            {
+              "expr": "rate(node_disk_reads_completed_total{device=\"sda\",instance!=\"node-exporter:9100\"}[5m]) * on(instance) group_left(node) (label_replace(kube_pod_info{pod=~\"node-exporter.*\"}, \"instance\", \"$1:9100\", \"pod_ip\", \"(.+)\"))",
+              "legendFormat": "{{node}} - Read IOPS"
+            },
+            {
+              "expr": "rate(node_disk_writes_completed_total{device=\"sda\",instance!=\"node-exporter:9100\"}[5m]) * on(instance) group_left(node) (label_replace(kube_pod_info{pod=~\"node-exporter.*\"}, \"instance\", \"$1:9100\", \"pod_ip\", \"(.+)\"))",
+              "legendFormat": "{{node}} - Write IOPS"
+            }
+          ],
+          "fieldConfig": {
+            "defaults": {
+              "unit": "ops",
+              "min": 0
+            }
+          },
+          "gridPos": {"h": 8, "w": 12, "x": 0, "y": 16}
+        },
+        {
+          "id": 9,
+          "title": "네트워크 사용량 (Mbps)",
+          "type": "timeseries",
+          "targets": [
+            {
+              "expr": "rate(node_network_receive_bytes_total{device=\"eth0\",instance!=\"node-exporter:9100\"}[5m]) * 8 / 1000000 * on(instance) group_left(node) (label_replace(kube_pod_info{pod=~\"node-exporter.*\"}, \"instance\", \"$1:9100\", \"pod_ip\", \"(.+)\"))",
+              "legendFormat": "{{node}} - RX"
+            },
+            {
+              "expr": "rate(node_network_transmit_bytes_total{device=\"eth0\",instance!=\"node-exporter:9100\"}[5m]) * 8 / 1000000 * on(instance) group_left(node) (label_replace(kube_pod_info{pod=~\"node-exporter.*\"}, \"instance\", \"$1:9100\", \"pod_ip\", \"(.+)\"))",
+              "legendFormat": "{{node}} - TX"
+            }
+          ],
+          "fieldConfig": {
+            "defaults": {
+              "unit": "Mbits",
+              "min": 0
+            }
+          },
+          "gridPos": {"h": 8, "w": 12, "x": 12, "y": 16}
+        },
+        {
+          "id": 10,
+          "title": "컨테이너 리소스 사용률",
+          "type": "table",
+          "targets": [
+            {
+              "expr": "label_replace(label_replace(rate(container_cpu_usage_seconds_total{id=~\"/kubepods.*scope\",id!~\".*pause.*\"}[5m]) * 100, \"pod_uid\", \"$1\", \"id\", \".*pod([a-f0-9]{8}_[a-f0-9]{4}_[a-f0-9]{4}_[a-f0-9]{4}_[a-f0-9]{12}).*\"), \"pod_uid_clean\", \"$1-$2-$3-$4-$5\", \"pod_uid\", \"([a-f0-9]{8})_([a-f0-9]{4})_([a-f0-9]{4})_([a-f0-9]{4})_([a-f0-9]{12})\") * on(pod_uid_clean) group_left(pod, namespace) label_replace(kube_pod_info, \"pod_uid_clean\", \"$1\", \"uid\", \"(.+)\")",
+              "refId": "A",
+              "format": "table",
+              "instant": true
+            },
+            {
+              "expr": "label_replace(label_replace(container_memory_usage_bytes{id=~\"/kubepods.*scope\",id!~\".*pause.*\"} / 1024 / 1024, \"pod_uid\", \"$1\", \"id\", \".*pod([a-f0-9]{8}_[a-f0-9]{4}_[a-f0-9]{4}_[a-f0-9]{4}_[a-f0-9]{12}).*\"), \"pod_uid_clean\", \"$1-$2-$3-$4-$5\", \"pod_uid\", \"([a-f0-9]{8})_([a-f0-9]{4})_([a-f0-9]{4})_([a-f0-9]{4})_([a-f0-9]{12})\") * on(pod_uid_clean) group_left(pod, namespace) label_replace(kube_pod_info, \"pod_uid_clean\", \"$1\", \"uid\", \"(.+)\")",
+              "refId": "B",
+              "format": "table",
+              "instant": true
+            }
+          ],
+          "fieldConfig": {
+            "defaults": {
+              "custom": {
+                "displayMode": "auto",
+                "filterable": true
+              }
+            },
+            "overrides": [
+              {
+                "matcher": {"id": "byName", "options": "Value #A"},
+                "properties": [
+                  {"id": "displayName", "value": "CPU 사용률 (%)"},
+                  {"id": "unit", "value": "percent"},
+                  {"id": "decimals", "value": 2}
+                ]
+              },
+              {
+                "matcher": {"id": "byName", "options": "Value #B"},
+                "properties": [
+                  {"id": "displayName", "value": "메모리 사용량 (MB)"},
+                  {"id": "unit", "value": "decbytes"},
+                  {"id": "decimals", "value": 1}
+                ]
+              },
+              {
+                "matcher": {"id": "byName", "options": "pod"},
+                "properties": [
+                  {"id": "displayName", "value": "Pod"}
+                ]
+              }
+            ]
+          },
+          "transformations": [
+            {
+              "id": "merge",
+              "options": {}
+            },
+            {
+              "id": "organize",
+              "options": {
+                "excludeByName": {
+                  "Time": true,
+                  "__name__": true,
+                  "job": true,
+                  "instance": true
+                },
+                "indexByName": {
+                  "pod": 0,
+                  "Value #A": 1,
+                  "Value #B": 2
+                }
+              }
+            },
+            {
+              "id": "groupBy",
+              "options": {
+                "fields": {
+                  "pod": {
+                    "aggregation": "lastNotNull",
+                    "operation": "groupby"
+                  },
+                  "Value #A": {
+                    "aggregation": "lastNotNull",
+                    "operation": "aggregate"
+                  },
+                  "Value #B": {
+                    "aggregation": "lastNotNull",
+                    "operation": "aggregate"
+                  }
+                }
+              }
+            }
+          ],
+          "transformations": [
+            {
+              "id": "merge",
+              "options": {}
+            },
+            {
+              "id": "organize",
+              "options": {
+                "excludeByName": {
+                  "Time": true,
+                  "__name__": true,
+                  "id": true,
+                  "image": true,
+                  "instance": true,
+                  "job": true,
+                  "name": true,
+                  "pod_uid": true,
+                  "pod_uid_clean": true,
+                  "uid": true
+                },
+                "indexByName": {
+                  "pod": 0,
+                  "Value #A": 1,
+                  "Value #B": 2
+                },
+                "renameByName": {
+                  "pod": "Pod",
+                  "Value #A": "CPU (%)",
+                  "Value #B": "Memory (MB)"
+                }
+              }
+            }
+          ],
+          "gridPos": {"h": 8, "w": 24, "x": 0, "y": 24}
+        }
+      ]
+    } 
