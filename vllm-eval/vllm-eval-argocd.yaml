@@ -1,14 +1,14 @@
 apiVersion: argoproj.io/v1alpha1
 kind: AppProject
 metadata:
-  name: monitoring
+  name: vllm-eval
   namespace: argocd
 spec:
-  description: Project for the Monitoring application
+  description: Project for the VLLM evaluation application
   sourceRepos:
   - 'https://github.com/thakicloud/vllm-manifests-public.git'
   destinations:
-  - namespace: monitoring
+  - namespace: vllm-nextchat
     server: https://kubernetes.default.svc
   clusterResourceWhitelist:
   - group: '*'
@@ -17,22 +17,19 @@ spec:
 apiVersion: argoproj.io/v1alpha1
 kind: Application
 metadata:
-  name: monitoring
+  name: vllm-eval
   namespace: argocd
 spec:
-  project: monitoring
+  project: vllm-eval
   source:
     repoURL: 'https://github.com/thakicloud/vllm-manifests-public.git'
     targetRevision: HEAD
-    path: monitoring
+    path: vllm-eval
     directory:
-      exclude: "monitoring-argocd-app.yaml"
+      exclude: "vllm-eval-argocd.yaml"
   destination:
     server: 'https://kubernetes.default.svc'
-    namespace: monitoring
+    namespace: vllm-nextchat
   syncPolicy:
-    automated:
-      prune: true
-      selfHeal: true
     syncOptions:
       - CreateNamespace=true
