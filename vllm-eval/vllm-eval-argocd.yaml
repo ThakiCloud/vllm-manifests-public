@@ -8,6 +8,8 @@ spec:
   sourceRepos:
   - 'https://github.com/thakicloud/vllm-manifests-public.git'
   destinations:
+  - namespace: argocd
+    server: https://kubernetes.default.svc
   - namespace: vllm-nextchat
     server: https://kubernetes.default.svc
   clusterResourceWhitelist:
@@ -25,6 +27,8 @@ spec:
     repoURL: 'https://github.com/thakicloud/vllm-manifests-public.git'
     targetRevision: HEAD
     path: vllm-eval
+    directory:
+      exclude: "vllm-eval-argocd.yaml"
   destination:
     server: 'https://kubernetes.default.svc'
     namespace: vllm-nextchat
