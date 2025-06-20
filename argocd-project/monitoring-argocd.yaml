@@ -1,0 +1,19 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: monitoring
+  namespace: argocd
+spec:
+  project: vllm-nextchat
+  source:
+    repoURL: 'https://github.com/thakicloud/vllm-manifests-public.git'
+    targetRevision: HEAD
+    path: monitoring
+    directory:
+      exclude: "monitoring-argocd.yaml"
+  destination:
+    server: 'https://kubernetes.default.svc'
+    namespace: vllm-nextchat
+  syncPolicy:
+    syncOptions:
+      - CreateNamespace=true

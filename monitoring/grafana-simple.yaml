@@ -39,10 +39,6 @@ spec:
             secretKeyRef:
               name: grafana-admin
               key: password
-        - name: GF_SERVER_ROOT_URL
-          value: "${GRAFANA_ROOT_URL}"
-        - name: GF_SERVER_SERVE_FROM_SUB_PATH
-          value: "true"
         volumeMounts:
         - name: datasource
           mountPath: /etc/grafana/provisioning/datasources
@@ -78,15 +74,13 @@ spec:
     targetPort: 3000
   type: LoadBalancer
 ---
-# Grafana admin password secret (populated via env substitution)
-apiVersion: v1
-kind: Secret
-metadata:
-  name: grafana-admin
-  namespace: vllm-nextchat
-  labels:
-    app.kubernetes.io/name: grafana
-    app.kubernetes.io/component: security
-stringData:
-  # Do NOT commit real password. Use envsubst or CI pipeline to inject.
-  password: "${GRAFANA_ADMIN_PASSWORD}" 
+# apiVersion: v1
+# kind: Secret
+# metadata:
+#   name: grafana-admin
+#   namespace: vllm-nextchat
+#   labels:
+#     app.kubernetes.io/name: grafana
+#     app.kubernetes.io/component: security
+# stringData:
+#   password: "init-password" 

@@ -18,7 +18,7 @@ vllm:
       cpu: "4"
 
 nextchat:
-  baseUrl: "http://vllm.vllm-nextchat.svc.cluster.local:8000"
+  baseUrl: "http://vllm:8000"
   openaiApiKey: "sk-proxy"
   defaultModel: "qwen3-8b"
   customModels: "qwen3-8b"

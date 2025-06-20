@@ -1,0 +1,20 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: vllm-nextchat
+  namespace: argocd
+spec:
+  project: vllm-nextchat
+  source:
+    repoURL: 'https://github.com/thakicloud/vllm-manifests-public.git'
+    targetRevision: HEAD
+    path: vllm-nextchat
+    helm:
+      valueFiles:
+      - custom-values.yaml
+  destination:
+    server: 'https://kubernetes.default.svc'
+    namespace: vllm-nextchat
+  syncPolicy:
+    syncOptions:
+      - CreateNamespace=true

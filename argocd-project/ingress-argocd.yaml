@@ -1,28 +1,10 @@
 apiVersion: argoproj.io/v1alpha1
-kind: AppProject
-metadata:
-  name: nginx-ingress
-  namespace: argocd
-spec:
-  description: Project for the VLLM frontend application
-  sourceRepos:
-  - 'https://github.com/thakicloud/vllm-manifests-public.git'
-  destinations:
-  - namespace: argocd
-    server: https://kubernetes.default.svc
-  - namespace: nginx-ingress
-    server: https://kubernetes.default.svc
-  clusterResourceWhitelist:
-  - group: '*'
-    kind: '*'
----
-apiVersion: argoproj.io/v1alpha1
 kind: Application
 metadata:
   name: nginx-ingress
   namespace: argocd
 spec:
-  project: nginx-ingress
+  project: vllm-nextchat
   source:
     repoURL: https://github.com/thakicloud/vllm-manifests-public.git
     path: nginx-ingress

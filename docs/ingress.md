@@ -6,6 +6,12 @@
 ## 포함된 매니페스트
 - `ingress.yaml`: NextChat UI와 Grafana 대시보드로의 접근을 정의하는 핵심 Ingress 리소스입니다.
 
+helm upgrade nginx-ingress ingress-nginx/ingress-nginx \
+  -n nginx-ingress \
+  --set controller.extraArgs.tcp-services-configmap="nginx-ingress/tcp-forwarding"
+
+kubectl rollout restart deployment nginx-ingress-ingress-nginx-controller -n nginx-ingress
+
 ## 배포 전 요구사항
 - Kubernetes 클러스터에 Ingress-NGINX 컨트롤러가 설치되어 있어야 합니다.
 - 라우팅에 사용할 도메인의 DNS가 Ingress 컨트롤러의 외부 IP 주소로 설정되어 있어야 합니다.

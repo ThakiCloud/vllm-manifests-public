@@ -6,7 +6,7 @@ metadata:
   labels:
     app: vllm-eval
 spec:
-  # 완료 후 정리 (1시간)
+  # 완료 후 정리 (2분)
   ttlSecondsAfterFinished: 120
   
   template:
