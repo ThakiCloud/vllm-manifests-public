@@ -1,111 +1,104 @@
-# vLLM-NextChat 서비스 스택 Kubernetes 매니페스트
+# vLLM Manifests for Kubernetes
 
-이 리포지토리는 vLLM 기반의 고성능 LLM 서비스 스택을 Kubernetes 클러스터에 배포하기 위한 모든 매니페스트와 설정을 통합 관리하는 **중앙 저장소(Integration Repository)**입니다.
+본 리포지토리는 vLLM 기반 LLM 추론 서비스를 Kubernetes 클러스터에 효율적으로 배포하고 관리하기 위한 매니페스트 모음입니다. GitOps 철학에 따라 ArgoCD와 함께 사용하는 것을 권장하며, vLLM 서버, 웹 UI, 모니터링, 성능 평가 등 LLM 서비스에 필요한 모든 컴포넌트를 포함하고 있습니다.
 
-## 🚀 리포지토리 목표
+## 🚀 주요 기능
 
-- **통합 관리**: vLLM, NextChat, 모니터링, 평가 등 여러 컴포넌트의 매니페스트를 한 곳에서 표준화하여 관리합니다.
-- **신속한 배포**: 검증된 매니페스트 세트를 통해 전체 서비스 스택을 어떤 Kubernetes 클러스터에도 빠르고 안정적으로 배포할 수 있도록 지원합니다.
-- **GitOps 기반 운영**: 모든 인프라 구성을 코드로 관리하여 변경 사항 추적, 버전 관리, 자동 배포를 용이하게 합니다.
+-   **통합 LLM 스택**: vLLM 서빙, NextChat UI, GPU 모니터링, 성능 평가 도구를 한 번에 배포.
+-   **Helm 기반 배포**: `vllm-nextchat`을 Helm 차트로 제공하여 유연하고 재사용 가능한 설정 관리.
+-   **GitOps Ready**: ArgoCD Application 매니페스트를 `argocd-project`에 포함하여 GitOps 워크플로우를 즉시 적용 가능.
+-   **Observability**: Prometheus, Grafana, DCGM Exporter를 포함한 강력한 모니터링 스택 기본 제공.
+-   **모델 평가**: `vllm-benchmark`, `evalchemy` Job을 통해 배포된 모델의 성능을 체계적으로 측정.
 
-## 🏛️ 통합 아키텍처
+## 📁 디렉토리 구조
 
-이 리포지토리에 포함된 컴포넌트들은 다음과 같이 유기적으로 상호작용하여 완전한 LLM 서비스 스택을 구성합니다.
+```
+.
+├── argocd-project/       # ArgoCD Application 매니페스트 (GitOps 시작점)
+├── docs/                 # 상세 배포 가이드 및 컴포넌트 설명 문서
+├── monitoring/           # Prometheus, Grafana 등 모니터링 스택
+├── nginx-ingress/        # NGINX Ingress Controller 설정
+├── vllm-eval/            # 모델 성능 평가용 Kubernetes Jobs
+├── vllm-frontend/        # 추가 프론트엔드 애플리케이션
+└── vllm-nextchat/        # vLLM 서버 및 NextChat UI (Helm 차트)
+```
+
+## 퀵스타트: ArgoCD로 배포하기
+
+1.  **리포지토리 Fork & Clone**: 이 리포지토리를 Fork한 후 로컬 환경에 Clone합니다.
+2.  **`custom-values.yaml` 수정**: `vllm-nextchat/custom-values.yaml` 파일을 열어 배포할 모델, 리소스, 도메인 주소 등 환경에 맞게 수정합니다.
+3.  **ArgoCD 연동**:
+    -   클러스터에 [ArgoCD를 설치](https://argo-cd.readthedocs.io/en/stable/getting_started/)합니다.
+    -   Fork한 Git 리포지토리를 ArgoCD에 [Repository로 등록](https://argo-cd.readthedocs.io/en/stable/user-guide/commands/argocd_repo_add/)합니다.
+4.  **App of Apps 배포**: `argocd-project` 디렉토리를 가리키는 ArgoCD Application을 생성하여 모든 컴포넌트를 한 번에 배포합니다.
+
+    ```bash
+    # 예시: Root Application 배포
+    argocd app create root-app \
+      --repo <YOUR_GIT_REPO_URL> \
+      --path argocd-project \
+      --dest-server https://kubernetes.default.svc \
+      --dest-namespace argocd
+    ```
+
+## 📚 상세 문서
+
+각 컴포넌트의 상세한 설명과 수동 배포 방법은 `docs` 디렉토리에서 확인할 수 있습니다.
+
+-   [**01 - argocd-project**](./docs/01-argocd-project.md): GitOps Entrypoint
+-   [**02 - nginx-ingress**](./docs/02-nginx-ingress.md): 외부 트래픽 관리
+-   [**03 - vllm-nextchat**](./docs/03-vllm-nextchat.md): Core LLM Service (Helm)
+-   [**04 - vllm-frontend**](./docs/04-vllm-frontend.md): 추가 프론트엔드
+-   [**05 - vllm-eval**](./docs/05-vllm-eval.md): 모델 성능 평가
+-   [**06 - monitoring**](./docs/06-monitoring.md): 시스템 상태 관찰
+
+## 아키텍처 개요
+
+이 프로젝트는 컴포넌트 기반 아키텍처를 따릅니다. 사용자는 Ingress를 통해 NextChat UI에 접근하고, NextChat은 Kubernetes 내부 서비스를 통해 vLLM 서버와 통신합니다. Prometheus는 vLLM과 노드의 GPU 메트릭을 수집하며, Grafana는 이를 시각화합니다. ArgoCD는 Git 리포지토리의 변경 사항을 지속적으로 클러스터에 동기화하여 전체 시스템의 형상을 관리합니다.
 
 ```mermaid
 graph TD
-    subgraph "External"
-        User[User/Developer]
+    subgraph "Git Repository"
+        Repo["vllm-manifests"]
     end
 
     subgraph "Kubernetes Cluster"
-        Ingress[Ingress Controller]
+        ArgoCD[ArgoCD]
+        Ingress[NGINX Ingress]
         
-        subgraph "vllm-nextchat Namespace"
-            subgraph "vllm-nextchat Helm Chart"
-                NextChat[Pod: NextChat UI]
-                VLLM[Pod: vLLM Server]
-                VLLM_SVC[Service: vllm-svc]
-                NextChat_SVC[Service: nextchat-svc]
-            end
+        subgraph "vllm-nextchat ns"
+            NextChat[NextChat UI]
+            VLLM[vLLM Server]
         end
 
-        subgraph "monitoring Namespace"
+        subgraph "monitoring ns"
             Prometheus[Prometheus]
             Grafana[Grafana]
             DCGM[DCGM Exporter]
         end
 
-        subgraph "vllm-eval Namespace"
-             EvalJob[Job: vllm-benchmark/evalchemy]
-             EvalArgo[ArgoCD App]
+        subgraph "vllm-eval ns"
+             EvalJob[Evaluation Job]
         end
     end
     
+    Repo -- Syncs --> ArgoCD
+    ArgoCD -- Manages --> Ingress
+    ArgoCD -- Manages --> NextChat & VLLM
+    ArgoCD -- Manages --> Prometheus & Grafana
+    ArgoCD -- Manages --> EvalJob
+    
     User -- HTTPS --> Ingress
-    Ingress -- / --> NextChat_SVC --> NextChat
-    Ingress -- /grafana --> Grafana
-    NextChat -- OpenAI API --> VLLM_SVC --> VLLM
-
-    Prometheus -- Scrapes --> DCGM & VLLM
+    Ingress -- Routes --> NextChat
+    Ingress -- Routes --> Grafana
+    NextChat -- OpenAI API --> VLLM
+    
+    Prometheus -- Scrapes --> VLLM
+    Prometheus -- Scrapes --> DCGM
     Grafana -- Queries --> Prometheus
-
-    EvalArgo -- Syncs --> EvalJob
-    EvalJob -- Benchmarks --> VLLM_SVC
+    EvalJob -- Benchmarks --> VLLM
 ```
 
-## 📁 컴포넌트별 배포 가이드
+## 기여하기
 
-각 컴포넌트의 상세한 배포 방법은 `docs/` 디렉토리의 문서를 참고하세요.
-
-- **[vLLM & NextChat 배포 가이드](./docs/vllm-nextchat.md)**: 핵심 LLM 추론 서버와 웹 UI를 배포합니다.
-- **[모니터링 스택 배포 가이드](./docs/monitoring.md)**: Prometheus, Grafana 기반의 모니터링 시스템을 배포합니다.
-- **[모델 평가 시스템 배포 가이드](./docs/vllm-eval.md)**: 모델 성능을 벤치마킹하는 평가 시스템을 배포합니다.
-- **[Ingress 배포 가이드](./docs/ingress.md)**: 외부 트래픽을 내부 서비스로 라우팅하는 Ingress를 설정합니다.
-
-## ✅ 사전 요구사항
-
-- 실행 중인 Kubernetes 클러스터 (v1.24 이상 권장)
-- `kubectl` CLI
-- `helm` CLI
-- 클러스터에 설치된 Ingress Controller (예: Ingress-NGINX)
-- NVIDIA GPU 노드 및 [NVIDIA Device Plugin](https://github.com/NVIDIA/k8s-device-plugin)
-
-## ⚙️ 전체 스택 배포 요약
-
-전체 스택을 배포하는 일반적인 순서는 다음과 같습니다. 각 단계의 자세한 내용은 위의 `docs/` 문서를 반드시 확인하세요.
-
-1.  **네임스페이스 생성**: 각 컴포넌트에 대한 네임스페이스를 생성합니다. (예: `vllm-nextchat`, `monitoring`)
-    ```bash
-    kubectl create namespace vllm-nextchat
-    kubectl create namespace monitoring
-    ```
-
-2.  **모니터링 스택 배포**:
-    ```bash
-    # (필요시) grafana-simple.yaml의 비밀번호 수정
-    kubectl apply -f monitoring/ -n monitoring
-    ```
-
-3.  **vLLM 및 NextChat 배포**:
-    ```bash
-    # custom-values.yaml 파일 수정
-    helm install vllm-app vllm-nextchat/ -f vllm-nextchat/custom-values.yaml -n vllm-nextchat
-    ```
-
-4.  **Ingress 설정 배포**:
-    ```bash
-    # ingress.yaml의 호스트 이름 수정
-    kubectl apply -f ingress/
-    ```
-    
-5.  **(선택) 모델 평가 시스템 배포**:
-    ```bash
-    # GitOps 방식 또는 수동 Job 실행
-    kubectl apply -f vllm-eval/vllm-eval-argocd-app.yaml # ArgoCD 사용 시
-    ```
-
-## 🌐 서비스 접속
-
--   **NextChat UI**: `docs/ingress.md` 가이드에 따라 설정한 호스트(예: `http://chat.your-domain.com`)로 접속합니다.
--   **Grafana 대시보드**: 설정된 호스트의 `/grafana` 경로(예: `http://chat.your-domain.com/grafana`)로 접속합니다. 
+프로젝트 개선을 위한 기여를 환영합니다. 버그를 발견하거나 새로운 기능을 제안하고 싶다면 언제든지 Issue를 열어주세요. Pull Request는 언제나 환영입니다. 
