@@ -4,44 +4,17 @@ metadata:
   name: regex-ingress
   namespace: nginx-ingress
   annotations:
-    nginx.ingress.kubernetes.io/rewrite-target: /$2
+    nginx.ingress.kubernetes.io/rewrite-target: /
     nginx.ingress.kubernetes.io/service-upstream: "true"
 spec:
   ingressClassName: nginx
   rules:
     - http:
         paths:
-          - path: /vllm(/|$)(.*)
+          - path: /
             pathType: ImplementationSpecific
             backend:
               service:
-                name: vllm
-                port:
-                  number: 8000
----
-apiVersion: networking.k8s.io/v1
-kind: Ingress
-metadata:
-  name: prefix-ingress
-  namespace: nginx-ingress
-  annotations:
-    nginx.ingress.kubernetes.io/service-upstream: "true"
-spec:
-  ingressClassName: nginx
-  rules:
-    - http:
-        paths:
-          - path: /grafana
-            pathType: Prefix
-            backend:
-              service:
-                name: grafana
-                port:
-                  number: 3000
-          - path: /
-            pathType: Prefix
-            backend:
-              service:
-                name: argocd-server
+                name: tmp
                 port:
                   number: 80
