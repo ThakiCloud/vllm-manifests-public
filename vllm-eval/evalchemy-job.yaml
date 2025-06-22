@@ -34,7 +34,7 @@ spec:
             - "--endpoint"
             - "$(VLLM_MODEL_ENDPOINT)"
             - "--config"
-            - "/app/eval/evalchemy/configs/eval_config.json"
+            - "/app/configs/evalchemy.json"
           
           # 결과 저장용 볼륨
           volumeMounts:
