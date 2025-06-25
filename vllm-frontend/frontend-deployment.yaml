@@ -18,7 +18,7 @@ spec:
       - name: ghcr-secret
       containers:
       - name: model-benchmark-frontend
-        image: ghcr.io/yunjae-park1111/vllm-frontend-public:v1.0.1
+        image: ghcr.io/yunjae-park1111/vllm-frontend-public:v1.0.2
         imagePullPolicy: Always
         ports:
         - containerPort: 80
