@@ -6,7 +6,7 @@ vllm:
   served_model_name: "Qwen/Qwen3-Embedding-4B"
   
 nodeSelector:
-  nvidia.com/gpu.product: NVIDIA-H100-NVL-MIG-1g.12gb
+  nvidia.com/mig-1g.12gb.product: NVIDIA-H100-NVL-MIG-1g.12gb
 
 fullnameOverride: "vllm-qwen3-4b"
 
@@ -19,7 +19,7 @@ autoscaling:
 
 resources:
   limits:
-    nvidia.com/gpu: 1
+    nvidia.com/mig-1g.12gb: 1
     memory: "12Gi"
     cpu: "4"
   requests:
