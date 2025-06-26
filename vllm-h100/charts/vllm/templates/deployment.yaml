@@ -1,0 +1,133 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "vllm.fullname" . }}
+  namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "vllm.labels" . | nindent 4 }}
+spec:
+  {{- if not .Values.autoscaling.enabled }}
+  replicas: {{ .Values.replicaCount }}
+  {{- end }}
+  selector:
+    matchLabels:
+      {{- include "vllm.selectorLabels" . | nindent 6 }}
+  template:
+    metadata:
+      annotations:
+        {{- with .Values.podAnnotations }}
+        {{- toYaml . | nindent 8 }}
+        {{- end }}
+      labels:
+        {{- include "vllm.selectorLabels" . | nindent 8 }}
+    spec:
+      {{- with .Values.imagePullSecrets }}
+      imagePullSecrets:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      serviceAccountName: {{ include "vllm.serviceAccountName" . }}
+      securityContext:
+        {{- toYaml .Values.podSecurityContext | nindent 8 }}
+      containers:
+        - name: {{ .Chart.Name }}
+          securityContext:
+            {{- toYaml .Values.securityContext | nindent 12 }}
+          image: "{{ .Values.image.repository }}:{{ .Values.image.tag | default .Chart.AppVersion }}"
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          command:
+            - python3
+            - -m
+            - vllm.entrypoints.openai.api_server
+          args:
+            - --model={{ .Values.vllm.model }}
+            - --host={{ .Values.vllm.host }}
+            - --port={{ .Values.vllm.port }}
+            - --max-model-len={{ .Values.vllm.maxModelLen }}
+            - --gpu-memory-utilization={{ .Values.vllm.gpuMemoryUtilization }}
+            {{- if .Values.vllm.quantization }}
+            - --quantization={{ .Values.vllm.quantization }}
+            {{- end }}
+            - --dtype={{ .Values.vllm.dtype }}
+            {{- if .Values.vllm.trust_remote_code }}
+            - --trust-remote-code
+            {{- end }}
+            {{- if .Values.vllm.tensor_parallel_size }}
+            - --tensor-parallel-size={{ .Values.vllm.tensor_parallel_size }}
+            {{- end }}
+            {{- if .Values.vllm.pipeline_parallel_size }}
+            - --pipeline-parallel-size={{ .Values.vllm.pipeline_parallel_size }}
+            {{- end }}
+            {{- if .Values.vllm.served_model_name }}
+            - --served-model-name={{ .Values.vllm.served_model_name }}
+            {{- end }}
+            {{- if .Values.vllm.max_num_seqs }}
+            - --max-num-seqs={{ .Values.vllm.max_num_seqs }}
+            {{- end }}
+            {{- if .Values.vllm.max_paddings }}
+            - --max-paddings={{ .Values.vllm.max_paddings }}
+            {{- end }}
+          ports:
+            - name: http
+              containerPort: {{ .Values.vllm.port }}
+              protocol: TCP
+          env:
+            - name: NUMBA_DISABLE_CACHE
+              value: "1"
+            {{- with .Values.env }}
+            {{- toYaml . | nindent 12 }}
+            {{- end }}
+            {{- if .Values.hfToken.enabled }}
+            - name: HF_TOKEN
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.hfToken.secretName }}
+                  key: {{ .Values.hfToken.secretKey }}
+            {{- end }}
+            - name: OUTLINES_CACHE_DIR
+              value: "/tmp/outlines_cache"
+            - name: XDG_CACHE_HOME
+              value: "/tmp/.cache"
+            - name: HOME
+              value: "/tmp"
+          {{- if .Values.livenessProbe }}
+          livenessProbe:
+            {{- toYaml .Values.livenessProbe | nindent 12 }}
+          {{- end }}
+          {{- if .Values.readinessProbe }}
+          readinessProbe:
+            {{- toYaml .Values.readinessProbe | nindent 12 }}
+          {{- end }}
+          resources:
+            {{- toYaml .Values.resources | nindent 12 }}
+          volumeMounts:
+            {{- if .Values.persistence.enabled }}
+            - name: data
+              mountPath: {{ .Values.persistence.mountPath }}
+            {{- end }}
+            {{- if .Values.modelCache.enabled }}
+            - name: model-cache
+              mountPath: {{ .Values.modelCache.mountPath }}
+            {{- end }}
+      volumes:
+        {{- if .Values.persistence.enabled }}
+        - name: data
+          persistentVolumeClaim:
+            claimName: {{ include "vllm.fullname" . }}-data
+        {{- end }}
+        {{- if .Values.modelCache.enabled }}
+        - name: model-cache
+          persistentVolumeClaim:
+            claimName: {{ include "vllm.fullname" . }}-model-cache
+        {{- end }}
+      {{- with .Values.nodeSelector }}
+      nodeSelector:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.affinity }}
+      affinity:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.tolerations }}
+      tolerations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
