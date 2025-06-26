@@ -1,0 +1,14 @@
+apiVersion: v2
+name: vllm-nextchat
+description: A Helm chart for deploying vLLM and NextChat as an umbrella chart.
+type: application
+version: 0.1.0
+appVersion: "1.0.0"
+
+dependencies:
+- name: vllm
+  version: "0.1.0"
+  repository: "file://./charts/vllm"
+- name: nextchat
+  version: "0.1.0"
+  repository: "file://./charts/nextchat" 

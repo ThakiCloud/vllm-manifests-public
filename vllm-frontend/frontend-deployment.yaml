@@ -5,7 +5,7 @@ metadata:
   labels:
     app: model-benchmark-frontend
 spec:
-  replicas: 1
+  replicas: 2
   selector:
     matchLabels:
       app: model-benchmark-frontend
@@ -18,22 +18,10 @@ spec:
       - name: ghcr-secret
       containers:
       - name: model-benchmark-frontend
-        image: ghcr.io/yunjae-park1111/vllm-frontend-public:v1.0.2
+        image: ghcr.io/yunjae-park1111/vllm-frontend-public:v1.0.8
         imagePullPolicy: Always
         ports:
         - containerPort: 80
-        volumeMounts:
-        - name: model-results-storage
-          mountPath: /usr/share/nginx/html/results/model-results
-        - name: parsed-results-storage
-          mountPath: /usr/share/nginx/html/results/parsed
-      volumes:
-      - name: model-results-storage
-        persistentVolumeClaim:
-          claimName: model-results-pvc
-      - name: parsed-results-storage
-        persistentVolumeClaim:
-          claimName: parsed-results-pvc
 ---
 apiVersion: v1
 kind: Service

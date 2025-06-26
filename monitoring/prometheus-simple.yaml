@@ -3,7 +3,7 @@ apiVersion: v1
 kind: ConfigMap
 metadata:
   name: prometheus-config
-  namespace: vllm-nextchat
+  namespace: vllm
 data:
   prometheus.yml: |
     global:
@@ -61,7 +61,7 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: prometheus
-  namespace: vllm-nextchat
+  namespace: vllm
 spec:
   replicas: 1
   selector:
@@ -101,7 +101,7 @@ apiVersion: v1
 kind: Service
 metadata:
   name: prometheus
-  namespace: vllm-nextchat
+  namespace: vllm
 spec:
   selector:
     app: prometheus

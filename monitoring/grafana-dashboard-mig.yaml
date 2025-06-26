@@ -1,42 +1,20 @@
-# Grafana Dashboard Provisioning Configuration
-apiVersion: v1
-kind: ConfigMap
-metadata:
-  name: grafana-dashboard-config
-  namespace: vllm
-  labels:
-    app: grafana
-    grafana_dashboard: "1"
-data:
-  dashboards.yaml: |
-    apiVersion: 1
-    providers:
-      - name: 'default'
-        orgId: 1
-        folder: ''
-        type: file
-        disableDeletion: false
-        editable: true
-        options:
-          path: /var/lib/grafana/dashboards
 
----
 # Grafana Dashboard JSON
 apiVersion: v1
 kind: ConfigMap
 metadata:
-  name: vllm-gpu-dashboard
+  name: vllm-gpu-dashboard-mig
   namespace: vllm
   labels:
     app: grafana
     grafana_dashboard: "1"
 data:
-  vllm-monitoring.json: |
+  vllm-monitoring-mig.json: |
     {
       "id": null,
-      "uid": "vllm-simple-dashboard",
-      "title": "vLLM 시스템 모니터링 대시보드",
-      "tags": ["vllm", "gpu", "monitoring"],
+      "uid": "vllm-simple-dashboard-mig",
+      "title": "vLLM 시스템 모니터링 대시보드 (MIG)",
+      "tags": ["vllm", "gpu", "monitoring", "mig"],
       "timezone": "browser",
       "refresh": "5s",
       "time": {
@@ -203,9 +181,35 @@ data:
           },
           "gridPos": {"h": 8, "w": 8, "x": 16, "y": 8}
         },
-
         {
           "id": 7,
+          "title": "MIG GPU 메모리 사용량 (%)",
+          "type": "stat",
+          "targets": [
+            {
+              "expr": "avg by (GPU_I_ID, gpu, Hostname) (DCGM_FI_DEV_FB_USED{job=\"dcgm-exporter\", GPU_I_ID!=\"\"} / (DCGM_FI_DEV_FB_USED{job=\"dcgm-exporter\", GPU_I_ID!=\"\"} + DCGM_FI_DEV_FB_FREE{job=\"dcgm-exporter\", GPU_I_ID!=\"\"}) * 100)",
+              "legendFormat": "{{Hostname}} MIG-{{GPU_I_ID}} GPU {{gpu}}"
+            }
+          ],
+          "fieldConfig": {
+            "defaults": {
+              "unit": "percent",
+              "min": 0,
+              "max": 100,
+              "displayName": "${__field.labels.Hostname} MIG-${__field.labels.GPU_I_ID}",
+              "thresholds": {
+                "steps": [
+                  {"color": "green", "value": null},
+                  {"color": "yellow", "value": 70},
+                  {"color": "red", "value": 85}
+                ]
+              }
+            }
+          },
+          "gridPos": {"h": 8, "w": 24, "x": 0, "y": 16}
+        },
+        {
+          "id": 8,
           "title": "디스크 I/O (IOPS)",
           "type": "timeseries",
           "targets": [
@@ -224,10 +228,10 @@ data:
               "min": 0
             }
           },
-          "gridPos": {"h": 8, "w": 12, "x": 0, "y": 16}
+          "gridPos": {"h": 8, "w": 12, "x": 0, "y": 24}
         },
         {
-          "id": 8,
+          "id": 9,
           "title": "네트워크 사용량 (Mbps)",
           "type": "timeseries",
           "targets": [
@@ -246,10 +250,10 @@ data:
               "min": 0
             }
           },
-          "gridPos": {"h": 8, "w": 12, "x": 12, "y": 16}
+          "gridPos": {"h": 8, "w": 12, "x": 12, "y": 24}
         },
         {
-          "id": 9,
+          "id": 10,
           "title": "컨테이너 리소스 사용률",
           "type": "table",
           "targets": [
@@ -372,7 +376,7 @@ data:
               }
             }
           ],
-          "gridPos": {"h": 8, "w": 24, "x": 0, "y": 24}
+          "gridPos": {"h": 8, "w": 24, "x": 0, "y": 32}
         }
       ]
     } 
