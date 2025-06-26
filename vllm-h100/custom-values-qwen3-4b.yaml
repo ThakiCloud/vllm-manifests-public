@@ -1,0 +1,59 @@
+vllm:
+  model: "Qwen/Qwen3-Embedding-4B"
+  maxModelLen: 512
+  gpuMemoryUtilization: 0.9
+  trust_remote_code: true
+  served_model_name: "Qwen/Qwen3-Embedding-4B"
+  
+nodeSelector:
+  nvidia.com/gpu.product: NVIDIA-H100-NVL-MIG-1g.12gb
+
+fullnameOverride: "vllm-qwen3-4b"
+
+# 명시적으로 replica 수를 1로 설정
+replicaCount: 1
+
+# autoscaling 비활성화
+autoscaling:
+  enabled: false
+
+resources:
+  limits:
+    nvidia.com/gpu: 1
+    memory: "12Gi"
+    cpu: "4"
+  requests:
+    memory: "6Gi"
+    cpu: "2"
+
+serviceAccount:
+  create: true
+  annotations: {}
+  name: "vllm-qwen3-4b-sa"
+
+  # 30B 모델을 위한 스토리지 설정
+persistence:
+  enabled: true
+  size: 20Gi  # 사용 가능한 스토리지 내에서 30B 모델 저장
+  storageClass: "csi-rbd-sc"  # 기본 스토리지 클래스 사용
+    
+modelCache:
+  enabled: true
+  size: 10Gi  # 모델 캐시를 위한 공간
+  storageClass: "csi-rbd-sc"
+
+hfToken:
+  enabled: true
+  
+ingress:
+  enabled: false  # 초기 테스트에서는 비활성화
+
+monitoring:
+  enabled: true
+  dcgmExporter:
+    enabled: true
+
+hpa:
+  enabled: false  # 30B 모델은 리소스 집약적이므로 HPA 비활성화
+  minReplicas: 1
+  maxReplicas: 1
