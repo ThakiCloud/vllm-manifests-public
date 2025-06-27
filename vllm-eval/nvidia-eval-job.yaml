@@ -19,7 +19,7 @@ spec:
         - name: ghcr-secret
       containers:
         - name: nvidia-eval
-          image: ghcr.io/yunjae-park1111/vllm-eval-public-nvidia-eval:release-20250626-095449
+          image: ghcr.io/thakicloud/vllm-eval-public-nvidia-eval:v1.1.0
           imagePullPolicy: Always
           
           # 리소스 제한
