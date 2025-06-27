@@ -1,0 +1,139 @@
+replicaCount: 1
+
+image:
+  repository: ghcr.io/open-webui/open-webui
+  pullPolicy: IfNotPresent
+  tag: "v0.6.15"
+
+imagePullSecrets: []
+nameOverride: ""
+fullnameOverride: "openwebui"
+
+serviceAccount:
+  create: true
+  annotations: {}
+  name: "openwebui-sa"
+
+podAnnotations: {}
+
+podSecurityContext:
+  fsGroup: 2000
+
+securityContext:
+  capabilities:
+    drop:
+    - ALL
+  readOnlyRootFilesystem: false
+  runAsNonRoot: true
+  runAsUser: 1000
+
+service:
+  type: LoadBalancer
+  port: 8080
+  targetPort: 8080
+  name: "openwebui"
+
+ingress:
+  enabled: false
+  className: "nginx"
+  annotations:
+    nginx.ingress.kubernetes.io/ssl-redirect: "true"
+    nginx.ingress.kubernetes.io/force-ssl-redirect: "true"
+    cert-manager.io/cluster-issuer: "letsencrypt-prod"
+  hosts:
+    - host: openwebui.example.com
+      paths:
+        - path: /
+          pathType: Prefix
+  tls:
+    - secretName: openwebui-tls
+      hosts:
+        - openwebui.example.com
+
+resources:
+  limits:
+    cpu: 1000m
+    memory: 2Gi
+  requests:
+    cpu: 200m
+    memory: 512Mi
+
+autoscaling:
+  enabled: false
+  minReplicas: 1
+  maxReplicas: 3
+  targetCPUUtilizationPercentage: 70
+  targetMemoryUtilizationPercentage: 80
+
+nodeSelector: {}
+
+tolerations: []
+
+affinity: {}
+
+# OpenWebUI specific configurations
+openwebui:
+  # vLLM Service URL - this will connect to the vLLM service
+  baseUrl: "http://vllm:8000"
+  
+  # Environment variables for OpenWebUI
+  env:
+    - name: OPENAI_API_BASE_URL
+      value: "http://vllm:8000/v1"
+    - name: OPENAI_API_KEY
+      value: "sk-proxy"
+    - name: WEBUI_NAME
+      value: "Open WebUI with vLLM"
+    - name: WEBUI_SECRET_KEY
+      value: "openwebui-secret-key-change-me"
+    - name: DEFAULT_LOCALE
+      value: "en-US"
+    - name: DEFAULT_USER_ROLE
+      value: "admin"
+    - name: USER_PERMISSIONS_CHAT_DELETION
+      value: "false"
+    - name: ENABLE_SIGNUP
+      value: "true"
+    - name: ENABLE_LOGIN_FORM
+      value: "true"
+    - name: ENABLE_OLLAMA_API
+      value: "false"
+    - name: ENABLE_OPENAI_API
+      value: "true"
+    - name: WEBUI_AUTH
+      value: "true"
+      
+persistence:
+  enabled: true
+  storageClass: "csi-rbd-sc"  # 명시적으로 StorageClass 지정
+  accessMode: ReadWriteOnce
+  size: 2Gi
+  mountPath: /app/backend/data
+
+# Health checks
+livenessProbe:
+  httpGet:
+    path: /health
+    port: 8080
+  initialDelaySeconds: 30
+  periodSeconds: 30
+  timeoutSeconds: 5
+  failureThreshold: 3
+
+readinessProbe:
+  httpGet:
+    path: /health
+    port: 8080
+  initialDelaySeconds: 10
+  periodSeconds: 10
+  timeoutSeconds: 3
+  failureThreshold: 3
+
+startupProbe:
+  httpGet:
+    path: /health
+    port: 8080
+  initialDelaySeconds: 10
+  periodSeconds: 10
+  timeoutSeconds: 3
+  failureThreshold: 30 
