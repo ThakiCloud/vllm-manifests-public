@@ -19,7 +19,7 @@ spec:
         - name: ghcr-secret
       containers:
         - name: vllm-benchmark
-          image: ghcr.io/yunjae-park1111/vllm-eval-public-vllm-benchmark:release-20250627-000514
+          image: ghcr.io/thakicloud/vllm-eval-public-vllm-benchmark:v1.1.0
           imagePullPolicy: Always
           
           # 환경 변수 (Dockerfile 참조)
