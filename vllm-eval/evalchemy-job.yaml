@@ -19,7 +19,7 @@ spec:
         - name: ghcr-secret
       containers:
         - name: evalchemy
-          image: ghcr.io/yunjae-park1111/vllm-eval-public-evalchemy:release-20250627-044756
+          image: ghcr.io/thakicloud/vllm-eval-public-evalchemy:v1.1.0
           imagePullPolicy: Always
           
           # 환경 변수로 간단하게 설정
