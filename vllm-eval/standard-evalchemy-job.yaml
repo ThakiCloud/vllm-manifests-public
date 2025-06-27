@@ -15,19 +15,26 @@ spec:
         app: vllm-eval
     spec:
       restartPolicy: Never
-      securityContext:
-        fsGroup: 1000
       imagePullSecrets:
-      - name: ghcr-secret
+        - name: ghcr-secret
       containers:
         - name: standard-evalchemy
-          image: ghcr.io/thakicloud/vllm-eval-public-standard-evalchemy:v0.1.0
+          image: ghcr.io/yunjae-park1111/vllm-eval-public-standard-evalchemy:release-20250627-044750
           imagePullPolicy: Always
           
           # 환경 변수로 간단하게 설정
           env:
             - name: VLLM_MODEL_ENDPOINT
               value: "http://vllm:8000/v1/completions"
+            - name: BACKEND_API
+              value: "http://model-benchmark-backend-svc:8000"
+            - name: MAX_TOKENS
+              value: "140"
+            - name: HF_TOKEN
+              valueFrom:
+                secretKeyRef:
+                  name: hf-token-secret
+                  key: token
           
           # 실행 명령
           args:
@@ -36,30 +43,3 @@ spec:
             - "--config"
             - "/app/configs/standard_evalchemy.json"
           
-          # 결과 저장용 볼륨
-          volumeMounts:
-            - name: model-results-storage
-              mountPath: /app/eval/standard_evalchemy/results
-            - name: parsed-results-storage
-              mountPath: /app/eval/standard_evalchemy/parsed
-      
-      volumes:
-        # 호스트 경로 사용 (개발/테스트용)
-        # - name: model-results-storage
-        #   hostPath:
-        #     path: /Users/pyj/Documents/vllm-eval-results
-        #     type: DirectoryOrCreate
-        
-        # PersistentVolumeClaim 사용 (필요시 주석 해제)
-        - name: model-results-storage
-          persistentVolumeClaim:
-            claimName: model-results-pvc
-        - name: parsed-results-storage
-          persistentVolumeClaim:
-            claimName: parsed-results-pvc
-        
-        # NFS 사용:
-        # - name: results
-        #   nfs:
-        #     server: your-nfs-server.example.com
-        #     path: /exports/vllm-eval-results 

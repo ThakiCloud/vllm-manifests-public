@@ -1,0 +1,45 @@
+# Job for running VLLM evaluation
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: nvidia-eval
+  labels:
+    app: vllm-eval
+spec:
+  # 완료 후 정리 (2분)
+  ttlSecondsAfterFinished: 120
+  
+  template:
+    metadata:
+      labels:
+        app: vllm-eval
+    spec:
+      restartPolicy: Never
+      imagePullSecrets: 
+        - name: ghcr-secret
+      containers:
+        - name: nvidia-eval
+          image: ghcr.io/yunjae-park1111/vllm-eval-public-nvidia-eval:release-20250626-095449
+          imagePullPolicy: Always
+          
+          # 리소스 제한
+          resources:
+            requests:
+              memory: "10Gi"
+            limits:
+              memory: "20Gi"
+          
+          # 환경 변수 (Dockerfile 참조)
+          env:
+            - name: API_BASE
+              value: "http://vllm:8000/v1" # K8s 서비스 이름 사용
+            - name: MODEL_NAME
+              value: "qwen3-8b"
+            - name: OUT_SEQ_LEN
+              value: "14000"
+            - name: EVAL_TYPE
+              value: "both"
+            - name: OUTPUT_FOLDER
+              value: "output"
+            - name: BACKEND_API
+              value: "http://model-benchmark-backend-svc:8000"
