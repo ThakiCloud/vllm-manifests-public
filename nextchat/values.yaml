@@ -1,0 +1,130 @@
+# NextChat Helm Chart Values
+# NextChat 웹 UI 전용 설정
+
+# NextChat 서브차트 설정 오버라이드
+nextchat:
+  # Replica count (used when autoscaling is disabled)
+  replicaCount: 1
+  
+  # Image configuration
+  image:
+    repository: yidadaa/chatgpt-next-web
+    pullPolicy: IfNotPresent
+    tag: "v2.15.0"
+  
+  # Service configuration
+  service:
+    type: LoadBalancer
+    port: 3000
+    targetPort: 3000
+    name: "nextchat"
+  
+  # Resource limits and requests
+  resources:
+    limits:
+      cpu: 1000m
+      memory: 1Gi
+    requests:
+      cpu: 200m
+      memory: 256Mi
+  
+  # Autoscaling configuration
+  autoscaling:
+    enabled: true
+    minReplicas: 1
+    maxReplicas: 1
+    targetCPUUtilizationPercentage: 70
+    targetMemoryUtilizationPercentage: 80
+  
+  # Security context
+  podSecurityContext:
+    fsGroup: 2000
+  
+  securityContext:
+    capabilities:
+      drop:
+      - ALL
+    readOnlyRootFilesystem: false
+    runAsNonRoot: true
+    runAsUser: 1000
+  
+  # ServiceAccount
+  serviceAccount:
+    create: true
+    annotations: {}
+    name: "nextchat-sa"
+  
+  # Affinity
+  affinity:
+    nodeAffinity:
+      requiredDuringSchedulingIgnoredDuringExecution:
+        nodeSelectorTerms:
+          - matchExpressions:
+              - key: nodepool
+                operator: NotIn
+                values:
+                  - "gpu"
+  
+  # Ingress 설정
+  ingress:
+    enabled: false  # 초기 테스트에서는 비활성화
+  
+  # Persistence 설정 - storage class 지정
+  persistence:
+    enabled: true
+    storageClass: "csi-rbd-sc"
+    size: 5Gi
+    accessMode: ReadWriteOnce
+    mountPath: /app/data
+  
+  # NextChat specific configurations
+  nextchat:
+    # vLLM Service URL - 외부 vLLM 서비스와 연동
+    baseUrl: "http://vllm-qwen3-30b.vllm:8000"
+    openaiApiKey: "sk-proxy"
+    hideUserApiKey: true
+    defaultModel: "Qwen/Qwen3-30B-A3B"
+    customModels: "Qwen/Qwen3-30B-A3B"
+  
+  # Environment variables for NextChat container
+  env:
+    - name: BASE_URL
+      value: "http://vllm-qwen3-30b.vllm:8000"
+    - name: DEFAULT_MODEL
+      value: "Qwen/Qwen3-30B-A3B"
+    - name: CUSTOM_MODELS
+      value: "Qwen/Qwen3-30B-A3B"
+    - name: HIDE_USER_API_KEY
+      value: "1"
+    - name: HOSTNAME
+      value: "0.0.0.0"
+  
+  # Secrets configuration
+  secrets:
+    enabled: true
+    name: "nextchat-secrets"
+    data:
+      openai-api-key: "sk-proxy"
+  
+  # Health checks
+  livenessProbe:
+    httpGet:
+      path: /
+      port: 3000
+    initialDelaySeconds: 30
+    periodSeconds: 30
+    timeoutSeconds: 5
+    failureThreshold: 3
+  
+  readinessProbe:
+    httpGet:
+      path: /
+      port: 3000
+    initialDelaySeconds: 10
+    periodSeconds: 10
+    timeoutSeconds: 3
+    failureThreshold: 3
+
+# HF Token 설정 (전역)
+hfToken:
+  enabled: true

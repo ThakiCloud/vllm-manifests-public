@@ -1,0 +1,11 @@
+apiVersion: v2
+name: nextchat
+description: A Helm chart for NextChat web UI
+type: application
+version: 0.1.0
+appVersion: "v2.15.0"
+
+dependencies:
+- name: nextchat
+  version: "0.1.0"
+  repository: "file://./charts/nextchat" 

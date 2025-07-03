@@ -10,9 +10,10 @@ keywords:
   - ui
   - web
   - frontend
-home: https://github.com/your-org/vllm-nextchat
+  - llm
+home: https://github.com/thakicloud/vllm-manifests-public
 sources:
   - https://github.com/Yidadaa/ChatGPT-Next-Web
 maintainers:
-  - name: platform-team
-    email: platform@your-org.com
+  - name: thaki-platform-team
+    email: platform@thaki.cloud
