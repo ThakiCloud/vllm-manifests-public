@@ -1,0 +1,19 @@
+apiVersion: v2
+name: openwebui
+description: A Helm chart for Open WebUI
+type: application
+version: 0.1.0
+appVersion: "v0.3.30"
+keywords:
+  - openwebui
+  - open-webui
+  - chat
+  - ui
+  - web
+  - frontend
+home: https://github.com/your-org/vllm-openwebui
+sources:
+  - https://github.com/open-webui/open-webui
+maintainers:
+  - name: platform-team
+    email: platform@your-org.com 

@@ -1,0 +1,71 @@
+openwebui:
+  # OpenWebUI에서 vllm-nextchat 네임스페이스의 vLLM 서비스에 연결
+  # 네임스페이스간 서비스 접근을 위한 FQDN 사용
+  baseUrl: "http://vllm-qwen3-30b.vllm:8000"
+  
+  env:
+    - name: OPENAI_API_BASE_URL
+      value: "http://vllm-qwen3-30b.vllm:8000/v1"
+    - name: OPENAI_API_KEY
+      value: "sk-proxy"
+    - name: WEBUI_NAME
+      value: "Open WebUI with vLLM (External)"
+    - name: WEBUI_SECRET_KEY
+      value: "openwebui-secret-key-change-me"
+    - name: DEFAULT_LOCALE
+      value: "ko-KR"
+    - name: DEFAULT_USER_ROLE
+      value: "user"
+    - name: USER_PERMISSIONS_CHAT_DELETION
+      value: "true"
+    - name: ENABLE_SIGNUP
+      value: "false"
+    - name: ENABLE_LOGIN_FORM
+      value: "true"
+    - name: ENABLE_OLLAMA_API
+      value: "false"
+    - name: ENABLE_OPENAI_API
+      value: "true"
+    - name: WEBUI_AUTH
+      value: "false"  # 초기 테스트를 위해 인증 비활성화
+
+  # 포트 설정 - 다른 프로젝트와 겹치지 않도록 8080 사용
+  service:
+    port: 8080
+    targetPort: 8080
+
+  # 리소스 설정 (OpenWebUI만)
+  resources:
+    limits:
+      cpu: 1000m
+      memory: 2Gi
+    requests:
+      cpu: 200m
+      memory: 512Mi
+  
+  # Affinity
+  affinity:
+    nodeAffinity:
+      requiredDuringSchedulingIgnoredDuringExecution:
+        nodeSelectorTerms:
+          - matchExpressions:
+              - key: nodepool
+                operator: NotIn
+                values:
+                  - "gpu"
+
+  # 데이터 영속성 설정 - 대화 기록 저장 (중요: 최상위 레벨에서 설정)
+  persistence:
+    enabled: true
+    storageClass: "csi-rbd-sc"  # 명시적으로 StorageClass 지정
+    accessMode: ReadWriteOnce
+    size: 5Gi
+
+  # Ingress 설정 (초기에는 비활성화)
+  ingress:
+    enabled: false
+
+  # 모니터링 설정
+  monitoring:
+    enabled: true
+
